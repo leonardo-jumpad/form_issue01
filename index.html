@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>InsightArc | Validação MeetTrack</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "surface": "#f9f9ff",
+          "error": "#ba1a1a",
+          "primary-container": "#4f46e5",
+          "surface-container-highest": "#dce2f7",
+          "surface-variant": "#dce2f7",
+          "primary-fixed-dim": "#c3c0ff",
+          "surface-container-low": "#f1f3ff",
+          "surface-container": "#e9edff",
+          "surface-container-lowest": "#ffffff",
+          "tertiary": "#684000",
+          "outline-variant": "#c7c4d8",
+          "on-secondary-container": "#007432",
+          "on-error": "#ffffff",
+          "on-primary": "#ffffff",
+          "primary": "#3525cd",
+          "surface-bright": "#f9f9ff",
+          "inverse-primary": "#c3c0ff",
+          "error-container": "#ffdad6",
+          "on-background": "#141b2b",
+          "on-primary-container": "#dad7ff",
+          "on-secondary": "#ffffff",
+          "on-surface": "#141b2b",
+          "on-surface-variant": "#464555",
+          "on-error-container": "#93000a",
+          "background": "#f9f9ff",
+          "primary-fixed": "#e2dfff",
+          "secondary-container": "#6bff8f",
+          "secondary": "#006e2f",
+          "outline": "#777587",
+          "surface-tint": "#4d44e3"
+        },
+        fontFamily: {
+          "headline": ["Inter", "sans-serif"],
+          "body": ["Inter", "sans-serif"],
+          "label": ["Inter", "sans-serif"]
+        },
+        borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+      },
+    },
+  }
+</script>
+<style>
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    vertical-align: middle;
+  }
+  .primary-gradient { background: linear-gradient(135deg, #3525cd 0%, #4f46e5 100%); }
+  .glass-nav { background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); }
+
+  .vote-btn { transition: all 150ms ease; }
+  .vote-btn:active { transform: scale(0.96); }
+
+  .vote-agree.selected  { background:#dcfce7; border-color:#16a34a; color:#15803d; font-weight:600; }
+  .vote-neutral.selected{ background:#fef9c3; border-color:#ca8a04; color:#a16207; font-weight:600; }
+  .vote-disagree.selected{ background:#fee2e2; border-color:#dc2626; color:#b91c1c; font-weight:600; }
+
+  .card-voted-agree    { border-left:3px solid #16a34a !important; }
+  .card-voted-neutral  { border-left:3px solid #ca8a04 !important; }
+  .card-voted-disagree { border-left:3px solid #dc2626 !important; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .fade-in { animation: fadeIn 350ms ease both; }
+
+  @keyframes pop { 0%{transform:scale(1)} 50%{transform:scale(1.05)} 100%{transform:scale(1)} }
+  .pop { animation: pop 180ms ease; }
+
+  .badge-feature  { background:#eff6ff; color:#1d4ed8; }
+  .badge-bug      { background:#fef2f2; color:#b91c1c; }
+  .badge-melhoria { background:#fff7ed; color:#c2410c; }
+  .badge-ux       { background:#faf5ff; color:#7e22ce; }
+  .badge-alta     { background:#fef2f2; color:#b91c1c; }
+  .badge-media    { background:#fefce8; color:#a16207; }
+  .badge-baixa    { background:#f0fdf4; color:#15803d; }
+
+  #screen-form  { display:block; }
+  #screen-success { display:none; }
+</style>
+</head>
+<body class="bg-surface text-on-surface font-body min-h-screen">
+
+<!-- NAV -->
+<header class="fixed top-0 w-full z-50 glass-nav shadow-sm flex justify-between items-center px-6 h-14 border-b border-outline-variant/20">
+  <img src="imagens/jumpad-logo-small.png" alt="Jumpad" class="h-8 w-auto object-contain" />
+  <div id="progress-pill" class="flex items-center gap-3">
+    <span class="text-xs font-medium text-on-surface-variant" id="progress-label">0 de 20 avaliadas</span>
+    <div class="w-28 h-1.5 bg-outline-variant/30 rounded-full overflow-hidden">
+      <div id="progress-bar" class="h-full bg-indigo-600 rounded-full transition-all duration-300" style="width:0%"></div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== TELA DO FORMULÁRIO ===== -->
+<main id="screen-form" class="pt-20 pb-16 px-4 max-w-2xl mx-auto">
+
+  <div class="mb-8 fade-in">
+    <p class="text-xs font-bold uppercase tracking-widest text-indigo-600 mb-2">Feedback Loop · MeetTrack</p>
+    <h1 class="text-3xl font-extrabold tracking-tight text-on-surface mb-2">Ajude-nos a priorizar o que importa.</h1>
+    <p class="text-on-surface-variant leading-relaxed">Suas respostas moldam o futuro das nossas ferramentas. Avalie cada sugestão abaixo.</p>
+  </div>
+
+  <div id="issues-list" class="flex flex-col gap-4"></div>
+
+  <!-- SUBMIT BAR -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur border-t border-outline-variant/20 px-4 py-3 flex items-center justify-between gap-4 z-40">
+    <div class="text-sm text-on-surface-variant">
+      <span id="voted-count" class="font-bold text-on-surface">0</span> de 20 avaliadas
+    </div>
+    <button id="submit-btn"
+      onclick="submitForm()"
+      disabled
+      class="primary-gradient text-white text-sm font-bold px-6 py-2.5 rounded-xl shadow-lg disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-all flex items-center gap-2">
+      <span class="material-symbols-outlined text-base">send</span>
+      Enviar respostas
+    </button>
+  </div>
+</main>
+
+<!-- ===== TELA DE SUCESSO ===== -->
+<main id="screen-success" class="min-h-screen flex items-center justify-center px-6 py-12">
+  <div class="max-w-md w-full text-center space-y-8 fade-in">
+    <div class="relative flex justify-center">
+      <div class="absolute inset-0 flex items-center justify-center opacity-20">
+        <div class="w-48 h-48 bg-primary-fixed-dim rounded-full blur-3xl"></div>
+      </div>
+      <div class="relative z-10 w-28 h-28 rounded-xl bg-surface-container-lowest flex items-center justify-center shadow-xl">
+        <span class="material-symbols-outlined text-7xl text-indigo-600" style="font-variation-settings:'FILL' 1">check_circle</span>
+      </div>
+    </div>
+    <div class="space-y-3">
+      <h1 class="text-4xl font-extrabold tracking-tight text-on-surface">Obrigado pelo seu feedback!</h1>
+      <p class="text-on-surface-variant text-lg leading-relaxed max-w-xs mx-auto">Suas contribuições são fundamentais para evoluirmos o produto.</p>
+    </div>
+    <div id="success-stats" class="flex justify-center gap-4 flex-wrap"></div>
+    <div class="pt-2">
+      <button onclick="location.reload()" class="primary-gradient w-full py-4 rounded-xl text-white font-semibold text-lg shadow-lg active:scale-95 transition-all">
+        Finalizar
+      </button>
+      <p class="mt-6 text-xs text-on-surface-variant/50 uppercase tracking-widest font-bold">Powered by InsightArc</p>
+    </div>
+  </div>
+</main>
+
+<script>
+const ISSUES = [
+  { id:1,  titulo:"Ícone da extensão deve indicar status da gravação",           tipo:"Feature",      prioridade:"Alta",  desc:"O ícone da extensão no Chrome deve mudar visualmente conforme o estado: gravação ativa (vermelho piscando), upload em andamento (animação/indicador), erro (ícone diferenciado). Não deve usar sobreposição na tela compartilhada." },
+  { id:2,  titulo:"Notificação persistente de gravação ativa dentro do plugin",  tipo:"Feature",      prioridade:"Alta",  desc:"Enquanto a gravação estiver em andamento, deve existir indicador visível e persistente dentro do painel lateral. Se houver erro (ex: microfone sem permissão), o alerta deve ser claro e não silencioso." },
+  { id:3,  titulo:"Permissão de microfone não deve ser solicitada repetidamente", tipo:"Bug",          prioridade:"Alta",  desc:"Usuários relatam que o plugin solicita permissão de microfone em gravações subsequentes mesmo após já ter sido concedida. Investigar e corrigir fluxo de verificação de permissões." },
+  { id:4,  titulo:"Gravação não deve iniciar em aba incorreta",                  tipo:"Bug",          prioridade:"Alta",  desc:"Ao clicar em gravar, o plugin está iniciando em abas antigas/erradas em vez da reunião ativa. Garantir que a gravação sempre se associe à aba correta." },
+  { id:5,  titulo:"Sessão do usuário não deve expirar durante uso ativo",        tipo:"Bug",          prioridade:"Alta",  desc:"A sessão cai recorrentemente exigindo novo login, inclusive no momento de iniciar gravação. Revisar lógica de refresh token e persistência de sessão." },
+  { id:6,  titulo:"Fluxo de iniciar gravação deve ser simplificado (1 clique)",  tipo:"Melhoria",     prioridade:"Alta",  desc:"O fluxo atual exige muitos passos. O ideal é: clicar no ícone → botão Iniciar gravação → inicia imediatamente com feedback visual. Modal atual está fora do padrão de mercado." },
+  { id:7,  titulo:"Alertar usuário sobre gravações não enviadas pendentes",       tipo:"Feature",      prioridade:"Alta",  desc:"O plugin não notifica quando há gravações locais não enviadas ao servidor. Implementar alerta visível com ação clara (enviar agora / baixar arquivo)." },
+  { id:8,  titulo:"Impedir perda de gravações ao atualizar ou reinstalar a extensão", tipo:"Feature", prioridade:"Alta",  desc:"Ao trocar versão, o IndexedDB local é apagado e gravações são perdidas. Sincronizar com nuvem antes de atualizar ou exibir alerta de risco." },
+  { id:9,  titulo:"Encerrar e enviar gravação automaticamente ao sair da reunião", tipo:"Feature",    prioridade:"Média", desc:"Ao detectar que o usuário saiu da reunião, encerrar a gravação e iniciar o envio automaticamente, sem ação manual necessária." },
+  { id:10, titulo:"Opção para desativar permanentemente o lembrete de gravação", tipo:"Feature",      prioridade:"Média", desc:"Banner de lembrete deve ter opção 'não mostrar novamente' que persiste entre sessões. Usuários não conseguem suprimir definitivamente o alerta." },
+  { id:11, titulo:"Botão flutuante deve ser opcional e desativável",             tipo:"Feature",      prioridade:"Média", desc:"O floating button sobre páginas deve poder ser desabilitado nas configurações. Comportamento padrão: abrir próximo ao ícone da extensão." },
+  { id:12, titulo:"Lembrete de gravação não funciona no Microsoft Teams",        tipo:"Bug",          prioridade:"Média", desc:"O lembrete funciona no Google Meet mas não dispara no Teams. Verificar e corrigir detecção de reunião para a plataforma Teams." },
+  { id:13, titulo:"Exibir nome correto da reunião no plugin durante a gravação", tipo:"Bug",          prioridade:"Média", desc:"Ao gravar tela inteira, plugin exibe 'Recorder 7' em vez do nome real. Investigar captura de metadados da reunião e corrigir." },
+  { id:14, titulo:"Ícone de 'ver gravação' na lista de recordings não é claro",  tipo:"Melhoria UX",  prioridade:"Média", desc:"Ícone atual parece 'copiar documento' e não comunica a ação. Substituir por ícone intuitivo com tooltip descritivo." },
+  { id:15, titulo:"Exibir mini resumo da reunião direto na lista do plugin",     tipo:"Feature",      prioridade:"Média", desc:"Mostrar 2-3 linhas de resumo abaixo do título na lista de gravações, sem precisar abrir a plataforma web." },
+  { id:16, titulo:"Engajamento automático de agentes ao final da reunião",       tipo:"Feature",      prioridade:"Média", desc:"Ao encerrar reunião, identificar o contexto e acionar o agente adequado, enviando resultado por e-mail automaticamente." },
+  { id:17, titulo:"Habilitar chat com agentes e MCPs durante a reunião",         tipo:"Feature",      prioridade:"Média", desc:"Durante a gravação, usuário deve poder interagir via chat com agentes e conectores MCP (HubSpot, Salesforce) para consultar dados em tempo real." },
+  { id:18, titulo:"Remover tela de transcrição em tempo real do plugin",         tipo:"Melhoria",     prioridade:"Baixa", desc:"Visualização de transcrição ao vivo não agrega valor e consome memória. Avaliar remoção para simplificar a interface." },
+  { id:19, titulo:"Reduzir impacto de performance do plugin na máquina do usuário", tipo:"Melhoria",  prioridade:"Baixa", desc:"Plugin trava computadores mais simples. Investigar otimizações: envio de apenas áudio, processamento incremental, redução de memória." },
+  { id:20, titulo:"Compartilhamento de pasta de gravações com gestor ou equipe", tipo:"Feature",      prioridade:"Baixa", desc:"Hoje é necessário compartilhar gravação por gravação. Implementar compartilhamento de pasta inteira com permissões por gestor." },
+];
+
+const votes = {};
+
+function tipoBadge(tipo) {
+  const map = { "Feature":"badge-feature", "Bug":"badge-bug", "Melhoria":"badge-melhoria", "Melhoria UX":"badge-ux" };
+  return map[tipo] || "badge-feature";
+}
+function prioBadge(p) {
+  const map = { "Alta":"badge-alta", "Média":"badge-media", "Baixa":"badge-baixa" };
+  return map[p] || "badge-media";
+}
+
+function renderIssues() {
+  const list = document.getElementById('issues-list');
+  ISSUES.forEach((issue, idx) => {
+    const div = document.createElement('div');
+    div.id = `card-${issue.id}`;
+    div.className = 'bg-surface-container-lowest rounded-xl border border-outline-variant/20 p-5 fade-in';
+    div.style.animationDelay = `${idx * 25}ms`;
+    const imgId = String(issue.id).padStart(2,'0');
+    div.innerHTML = `
+      <div class="flex items-start gap-2 mb-1 flex-wrap">
+        <span class="text-xs font-mono text-outline">#${String(issue.id).padStart(2,'0')}</span>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${tipoBadge(issue.tipo)}">${issue.tipo}</span>
+        <span class="text-xs font-bold px-2 py-0.5 rounded-full ${prioBadge(issue.prioridade)}">${issue.prioridade}</span>
+      </div>
+      <h3 class="text-sm font-bold text-on-surface leading-snug mb-2">${issue.titulo}</h3>
+      <p class="text-xs text-on-surface-variant leading-relaxed mb-3">${issue.desc}</p>
+      <div class="card-image-slot mb-4 rounded-lg overflow-hidden border border-outline-variant/20 bg-surface-container-low" style="min-height:160px;">
+        <img
+          src="imagens/image${imgId}.png"
+          alt="Imagem do item #${String(issue.id).padStart(2,'0')}"
+          class="w-full h-full object-cover"
+          style="display:block; min-height:160px; max-height:280px;"
+          onerror="this.parentElement.innerHTML='<div class=\\'flex flex-col items-center justify-center gap-2 text-outline py-8 px-4\\' style=\\'min-height:160px\\'><span class=\\'material-symbols-outlined text-4xl opacity-30\\'>image</span><span class=\\'text-xs opacity-40 font-mono\\'>imagens/image${imgId}.png</span></div>'"
+        />
+      </div>
+      <div class="flex gap-2">
+        <button onclick="vote(${issue.id},'concordo',this)"
+          class="vote-btn vote-agree flex-1 flex items-center justify-center gap-1.5 border border-outline-variant/40 rounded-lg py-2 text-xs font-medium text-on-surface-variant hover:bg-green-50 hover:border-green-400 hover:text-green-700">
+          <span style="font-size:15px">👍</span> Concordo
+        </button>
+        <button onclick="vote(${issue.id},'neutro',this)"
+          class="vote-btn vote-neutral flex-1 flex items-center justify-center gap-1.5 border border-outline-variant/40 rounded-lg py-2 text-xs font-medium text-on-surface-variant hover:bg-yellow-50 hover:border-yellow-400 hover:text-yellow-700">
+          <span style="font-size:15px">🤔</span> Neutro
+        </button>
+        <button onclick="vote(${issue.id},'nao_concordo',this)"
+          class="vote-btn vote-disagree flex-1 flex items-center justify-center gap-1.5 border border-outline-variant/40 rounded-lg py-2 text-xs font-medium text-on-surface-variant hover:bg-red-50 hover:border-red-400 hover:text-red-700">
+          <span style="font-size:15px">👎</span> Não concordo
+        </button>
+      </div>
+      <div class="mt-3">
+        <p class="text-xs font-semibold text-on-surface-variant mb-1.5">Quer explicar sua resposta?</p>
+        <textarea
+          id="comment-${issue.id}"
+          rows="3"
+          placeholder="Sua opinião nos ajuda a entender melhor o contexto..."
+          class="w-full text-xs text-on-surface bg-surface-container-low border border-outline-variant/30 rounded-lg px-3 py-2 resize-y placeholder:text-outline/50 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-300 transition-all"
+        ></textarea>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function vote(id, value, btn) {
+  votes[id] = value;
+  const card = document.getElementById(`card-${id}`);
+
+  // reset card border
+  card.classList.remove('card-voted-agree','card-voted-neutral','card-voted-disagree');
+  // reset buttons
+  card.querySelectorAll('.vote-btn').forEach(b => b.classList.remove('selected'));
+
+  // apply
+  btn.classList.add('selected','pop');
+  setTimeout(() => btn.classList.remove('pop'), 200);
+
+  const borderMap = { concordo:'card-voted-agree', neutro:'card-voted-neutral', nao_concordo:'card-voted-disagree' };
+  card.classList.add(borderMap[value]);
+
+  updateProgress();
+}
+
+function updateProgress() {
+  const total = ISSUES.length;
+  const done = Object.keys(votes).length;
+  const pct = Math.round((done / total) * 100);
+
+  document.getElementById('progress-label').textContent = `${done} de ${total} avaliadas`;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('voted-count').textContent = done;
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = done < total;
+}
+
+function submitForm() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+
+  const labelMap = { concordo:'CONCORDO', neutro:'NEUTRO', nao_concordo:'NÃO CONCORDO' };
+
+  let counts = { concordo:0, neutro:0, nao_concordo:0 };
+  ISSUES.forEach(i => { if(votes[i.id]) counts[votes[i.id]]++; });
+
+  let txt = `INSIGHTARC — VALIDAÇÃO DE MELHORIAS MEETTRACK\n`;
+  txt += `Data: ${dateStr} às ${timeStr}\n`;
+  txt += `${'='.repeat(52)}\n\n`;
+
+  ISSUES.forEach(issue => {
+    const resp = labelMap[votes[issue.id]] || '—';
+    const commentEl = document.getElementById(`comment-${issue.id}`);
+    const comment = commentEl ? commentEl.value.trim() : '';
+    txt += `#${String(issue.id).padStart(2,'0')} | ${issue.titulo}\n`;
+    txt += `Tipo: ${issue.tipo} | Prioridade: ${issue.prioridade}\n`;
+    txt += `Resposta: ${resp}\n`;
+    if (comment) txt += `Comentário: ${comment}\n`;
+    txt += `${'-'.repeat(52)}\n\n`;
+  });
+
+  txt += `${'='.repeat(52)}\n`;
+  txt += `Total: ${ISSUES.length} respostas registradas\n`;
+  txt += `Concordo: ${counts.concordo} | Neutro: ${counts.neutro} | Não concordo: ${counts.nao_concordo}\n`;
+
+  // download
+  const blob = new Blob([txt], { type:'text/plain;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const ts   = now.toISOString().replace(/[:.]/g,'-').slice(0,19);
+  a.href     = url;
+  a.download = `feedback_meettrack_${ts}.txt`;
+  a.click();
+  URL.revokeObjectURL(url);
+
+  // show success screen
+  document.getElementById('screen-form').style.display = 'none';
+  document.getElementById('screen-success').style.display = 'flex';
+
+  // stats pills
+  const stats = document.getElementById('success-stats');
+  stats.innerHTML = `
+    <span class="px-4 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700">👍 ${counts.concordo} Concordo</span>
+    <span class="px-4 py-1.5 rounded-full text-sm font-semibold bg-yellow-100 text-yellow-700">🤔 ${counts.neutro} Neutro</span>
+    <span class="px-4 py-1.5 rounded-full text-sm font-semibold bg-red-100 text-red-700">👎 ${counts.nao_concordo} Não concordo</span>
+  `;
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+renderIssues();
+</script>
+</body>
+</html>
