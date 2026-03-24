@@ -272,53 +272,50 @@ function updateProgress() {
   document.getElementById('voted-count').textContent = done;
 
   const btn = document.getElementById('submit-btn');
-  btn.disabled = done < total;
+  btn.disabled = done < 1; // TESTE: libera após 1 voto
 }
 
-function submitForm() {
+const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzMwFTe58a5pKdVPPOPjhcyuWHyK5mhLqu9omlTe18y4gJJMBZTe1BCtvoaaPR-Qgqhwg/exec";
+
+async function submitForm() {
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> Enviando...`;
+
   const now = new Date();
-  const dateStr = now.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
-  const timeStr = now.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
-
-  const labelMap = { concordo:'CONCORDO', neutro:'NEUTRO', nao_concordo:'NÃO CONCORDO' };
-
+  const labelMap = { concordo:'Concordo', neutro:'Neutro', nao_concordo:'Não concordo' };
   let counts = { concordo:0, neutro:0, nao_concordo:0 };
-  ISSUES.forEach(i => { if(votes[i.id]) counts[votes[i.id]]++; });
+  ISSUES.forEach(i => { if (votes[i.id]) counts[votes[i.id]]++; });
 
-  let txt = `INSIGHTARC — VALIDAÇÃO DE MELHORIAS MEETTRACK\n`;
-  txt += `Data: ${dateStr} às ${timeStr}\n`;
-  txt += `${'='.repeat(52)}\n\n`;
+  // Monta payload flat: Q01_Titulo, Q01_Resposta, Q01_Comentario...
+  const payload = { Projeto: "MeetTrack" };
 
   ISSUES.forEach(issue => {
-    const resp = labelMap[votes[issue.id]] || '—';
+    const key = `Q${String(issue.id).padStart(2,'0')}`;
     const commentEl = document.getElementById(`comment-${issue.id}`);
-    const comment = commentEl ? commentEl.value.trim() : '';
-    txt += `#${String(issue.id).padStart(2,'0')} | ${issue.titulo}\n`;
-    txt += `Tipo: ${issue.tipo} | Prioridade: ${issue.prioridade}\n`;
-    txt += `Resposta: ${resp}\n`;
-    if (comment) txt += `Comentário: ${comment}\n`;
-    txt += `${'-'.repeat(52)}\n\n`;
+    payload[`${key}_Titulo`]     = issue.titulo;
+    payload[`${key}_Tipo`]       = issue.tipo;
+    payload[`${key}_Prioridade`] = issue.prioridade;
+    payload[`${key}_Resposta`]   = labelMap[votes[issue.id]] || '—';
+    payload[`${key}_Comentario`] = commentEl ? commentEl.value.trim() : '';
   });
 
-  txt += `${'='.repeat(52)}\n`;
-  txt += `Total: ${ISSUES.length} respostas registradas\n`;
-  txt += `Concordo: ${counts.concordo} | Neutro: ${counts.neutro} | Não concordo: ${counts.nao_concordo}\n`;
+  try {
+    // mode: no-cors + text/plain: evita preflight e o bloqueio de redirect do Apps Script
+    await fetch(SHEETS_URL, {
+      method:  'POST',
+      mode:    'no-cors',
+      body:    JSON.stringify(payload),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+  } catch (err) {
+    console.warn('Erro ao enviar para Sheets:', err);
+  }
 
-  // download
-  const blob = new Blob([txt], { type:'text/plain;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  const ts   = now.toISOString().replace(/[:.]/g,'-').slice(0,19);
-  a.href     = url;
-  a.download = `feedback_meettrack_${ts}.txt`;
-  a.click();
-  URL.revokeObjectURL(url);
-
-  // show success screen
+  // Tela de sucesso
   document.getElementById('screen-form').style.display = 'none';
   document.getElementById('screen-success').style.display = 'flex';
 
-  // stats pills
   const stats = document.getElementById('success-stats');
   stats.innerHTML = `
     <span class="px-4 py-1.5 rounded-full text-sm font-semibold bg-green-100 text-green-700">👍 ${counts.concordo} Concordo</span>
